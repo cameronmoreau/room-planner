@@ -1,42 +1,47 @@
 import React, { useRef, useState } from "react";
 import { useCanvas } from "./canvas/hooks/useCanvas";
 import { Toolbar } from "./components";
-import { drawCircle } from "./primitive/draw/circle";
+import {
+  drawWall,
+  findIntersectedAnchor,
+  getAnchors,
+} from "./planner/components/wall";
+import { Wall } from "./planner/types";
 import { drawLine } from "./primitive/draw/line";
-import { intersectsLine } from "./primitive/math";
-import { Line, Point } from "./primitive/types";
+import { intersectsLine, intersectsRect } from "./primitive/math";
+import { Line, Point, Shape } from "./primitive/types";
 import { Action } from "./types";
+import { randomId } from "./utils";
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>();
-  const [action, setAction] = useState<Action>("select");
+  const [action, setAction] = useState<Action>("draw");
   const [initPoint, setInitPoint] = useState<Point>(null);
 
   const [drawingCursor, setDrawingCursor] = useState<Point>(null);
 
-  const [lines, setLines] = useState<Line[]>([
-    { x1: 0, y1: 20, x2: 20, y2: 100 },
-    { x1: 300, y1: 250, x2: 260, y2: 70, color: "red" },
-    { x1: 70, y1: 240, x2: 160, y2: 120, color: "green", width: 5 },
+  const [walls, setWalls] = useState<Wall[]>([
+    {
+      id: randomId(),
+      type: "wall",
+      shape: {
+        x1: 80,
+        y1: 80,
+        x2: 450,
+        y2: 80,
+      },
+    },
   ]);
 
   const [selectedIndex, setSelectedIndex] = useState<number>(null);
 
-  const canvas = useCanvas(canvasRef, (c) => {
-    lines.forEach((line, i) => {
-      if (i === selectedIndex) {
-        drawLine(c, { ...line, color: "purple" });
-      } else {
-        drawLine(c, line);
-      }
+  useCanvas(canvasRef, (c) => {
+    walls.forEach((wall, i) => {
+      drawWall(c, wall, i === selectedIndex);
     });
 
-    if (initPoint) {
-      drawCircle(c, { ...initPoint, radius: 5 });
-    }
-
     if (initPoint && drawingCursor) {
-      drawLine(canvas, {
+      drawLine(c, {
         x1: initPoint.x,
         y1: initPoint.y,
         x2: drawingCursor.x,
@@ -57,17 +62,27 @@ function App() {
   const onMouseDown = (
     event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
   ) => {
-    const { clientX, clientY } = event;
+    const { clientX: x, clientY: y } = event;
 
     switch (action) {
       case "draw": {
-        setInitPoint({ x: clientX, y: clientY });
+        let startX = x;
+        let startY = y;
+
+        // Check if on anchor
+        const anchor = findIntersectedAnchor(walls, { x, y });
+        if (anchor) {
+          startX = anchor.x1 + Math.abs(anchor.x1 - anchor.x2) / 2;
+          startY = anchor.y1 + Math.abs(anchor.y1 - anchor.y2) / 2;
+        }
+
+        setInitPoint({ x: startX, y: startY });
         return;
       }
 
       case "select": {
-        const index = lines.findIndex((line) => {
-          return intersectsLine({ x: clientX, y: clientY }, line);
+        const index = walls.findIndex((wall) => {
+          return intersectsLine({ x, y }, wall.shape);
         });
 
         if (index >= 0) {
@@ -82,18 +97,34 @@ function App() {
   const onMouseUp = (
     event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
   ) => {
+    const { clientX: x, clientY: y } = event;
+
     if (initPoint) {
-      setLines((v) => [
+      let endX = x;
+      let endY = y;
+
+      const anchor = findIntersectedAnchor(walls, { x, y });
+      if (anchor) {
+        endX = anchor.x1 + Math.abs(anchor.x1 - anchor.x2) / 2;
+        endY = anchor.y1 + Math.abs(anchor.y1 - anchor.y2) / 2;
+      }
+
+      setWalls((v) => [
         ...v,
         {
-          x1: initPoint.x,
-          y1: initPoint.y,
-          x2: event.clientX,
-          y2: event.clientY,
+          id: randomId(),
+          type: "wall",
+          shape: {
+            x1: initPoint.x,
+            y1: initPoint.y,
+            x2: endX,
+            y2: endY,
+          },
         },
       ]);
       setDrawingCursor(null);
       setInitPoint(null);
+      setAction("move");
     }
   };
 

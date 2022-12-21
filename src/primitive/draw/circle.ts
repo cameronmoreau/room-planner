@@ -6,7 +6,7 @@ export const drawCircle = (
 ) => {
   canvas.beginPath();
   canvas.arc(x, y, radius, 0, 2 * Math.PI);
-  canvas.strokeStyle = color;
+  canvas.fillStyle = color;
   canvas.lineWidth = width;
-  canvas.stroke();
+  canvas.fill();
 };

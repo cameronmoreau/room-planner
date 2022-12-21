@@ -20,3 +20,8 @@ export interface Circle extends Point, Style {
 }
 
 export interface Line extends Shape, Style {}
+
+export interface Label extends Point {
+  text: string;
+  angle?: number;
+}

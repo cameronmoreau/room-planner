@@ -1,5 +1,20 @@
 import { Point, Shape } from "./types";
 
+const center = (a: number, b: number) => {
+  return (a + b) / 2;
+};
+
+export const shapeCenter = (shape: Shape): Point => {
+  return {
+    x: center(shape.x1, shape.x2),
+    y: center(shape.y1, shape.y2),
+  };
+};
+
+export const angle = (p1: Point, p2: Point): number => {
+  return Math.atan2(p2.y - p1.y, p2.x - p1.x);
+};
+
 export const distance = (a: Point, b: Point): number => {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
 };
