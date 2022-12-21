@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useLayoutEffect, useRef, useState } from "react";
 
 export interface UseCanvasResponse {
   context?: CanvasRenderingContext2D;
@@ -6,12 +6,12 @@ export interface UseCanvasResponse {
 }
 
 export const useCanvas = (
-  canvasRef: RefObject<HTMLCanvasElement>
-): [boolean, CanvasRenderingContext2D] => {
+  canvasRef: RefObject<HTMLCanvasElement>,
+  draw: (canvas: CanvasRenderingContext2D) => void
+): CanvasRenderingContext2D => {
   const contextRef = useRef<CanvasRenderingContext2D>();
-  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth * 2;
     canvas.height = window.innerHeight * 2;
@@ -20,9 +20,11 @@ export const useCanvas = (
 
     const context = canvas.getContext("2d");
     context.scale(2, 2);
+    context.clearRect(0, 0, canvas.width, canvas.height);
     contextRef.current = context;
-    setReady(true);
-  }, []);
 
-  return [ready, contextRef?.current];
+    draw(context);
+  });
+
+  return contextRef?.current;
 };

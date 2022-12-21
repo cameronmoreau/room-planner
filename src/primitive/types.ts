@@ -8,9 +8,15 @@ export interface Point {
   y: number;
 }
 
-export interface Line extends Style {
+export interface Shape {
   x1: number;
   y1: number;
   x2: number;
   y2: number;
 }
+
+export interface Circle extends Point, Style {
+  radius: number;
+}
+
+export interface Line extends Shape, Style {}
